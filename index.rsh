@@ -1,9 +1,3 @@
-/**
- * Almost done!
- * 
- * -- After the auction is complete, the Reach contract still owns the token
- */
-
 'reach 0.1';
 
 const Params = Object({
@@ -25,7 +19,7 @@ export const main = Reach.App(() => {
     });
     const V = View({
       min: UInt,
-      nft: Address,
+      nft: Contract,
       currentBid: UInt,
     });
     const E = Events({
@@ -34,6 +28,7 @@ export const main = Reach.App(() => {
     });
     const myERC = {
       transferFrom: Fun([Address, Address, UInt256], Null),
+      balanceOf: Fun([Address], UInt256),
     };
     init();
 
@@ -48,11 +43,9 @@ export const main = Reach.App(() => {
     const ctcSol = remote(nftId, myERC);
     const addr = getAddress();
     ctcSol.transferFrom(owner, addr, UInt256(tokenId));
-    //assert(balance(nftId) == amt, "balance of NFT is wrong");
-    // V.min.set(minBid);
-    // V.nft.set(nftId);
-    //commit();
-    //Creator.publish();
+    //assert(ctcSol.balanceOf(addr) == amt, "balance of NFT is wrong");
+    V.min.set(minBid);
+    V.nft.set(nftId);
     Creator.interact.auctionReady();
     const end = lastConsensusTime() + lenInBlocks;
     const [
@@ -69,15 +62,17 @@ export const main = Reach.App(() => {
         .api_(Bidder.bid, (bid) => {
             check(bid > lastPrice, "bid is too low");
             return [ bid, (notify) => {
+                const who = this;
+                E.seeBid(who, bid);
                 notify([highestBidder, lastPrice]);
                 if ( ! isFirstBid ) {
                     transfer(lastPrice).to(highestBidder);
                 }
-                const who = this;
                 return [who, bid, false];
             }];
         })
     ctcSol.transferFrom(addr, highestBidder, UInt256(tokenId));
+    E.seeOutcome(highestBidder, lastPrice);
     if ( ! isFirstBid ) { transfer(lastPrice).to(Creator); }
     commit();
     exit();

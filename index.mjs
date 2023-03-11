@@ -22,7 +22,7 @@ stdlib.setWalletFallback(stdlib.walletFallback({
   }
 }));
 console.log(`Setting constants...`);
-const nftId = '0xf72a6B8bc6348d3171D87d3814172ed4bC770747';
+const nftId = '0x42361Eef30149a50A6A2B27062d1E54213b47159';
 let provider = ethers.getDefaultProvider(telos);
 
 const abi = [
@@ -184,7 +184,7 @@ const abi = [
   }
 ];
 const minBid = 0.1;
-const tokenId = 14;
+const tokenId = 0;
 console.log(`Minimum bid: ${minBid}`);
 const lenInBlocks = 20;
 const owner = '0x175fCe4733A90b231954796E836C42956772d514';
@@ -244,19 +244,19 @@ const startAuction = async () => {
   // await runUser('Bob4');
 };
 
-// ctcCreator.e.seeBid.monitor((evt) => {
-//   console.log(`seeBid monitor input triggered: ${evt}`);
-//   const {when, what: [ who_ ]} = evt;
-//   const who = stdlib.formatAddress(who_);
-//   console.log(`${stdlib.formatAddress(accCreator)} sees that ${who} bid`);
-// });
+ctcCreator.e.seeBid.monitor((evt) => {
+  console.log(`seeBid monitor input triggered: ${evt}`);
+  const {when, what: [ who_ ]} = evt;
+  const who = stdlib.formatAddress(who_);
+  console.log(`${stdlib.formatAddress(accCreator)} sees that ${who} bid`);
+});
 
-// ctcCreator.e.seeOutcome.monitor((evt) => {
-//   console.log(`seeOutcome monitor input triggered: ${evt}`);
-//   const {when, what: [who_]} = evt;
-//   const who = stdlib.formatAddress(who_);
-//   console.log(`${stdlib.formatAddress(accCreator)} sees that ${who} won the auction`);
-// })
+ctcCreator.e.seeOutcome.monitor((evt) => {
+  console.log(`seeOutcome monitor input triggered: ${evt}`);
+  const {when, what: [who_]} = evt;
+  const who = stdlib.formatAddress(who_);
+  console.log(`${stdlib.formatAddress(accCreator)} sees that ${who} won the auction`);
+})
 
 const ctcDis = await stdlib.withDisconnect(() => ctcCreator.p.Creator({
   params,
