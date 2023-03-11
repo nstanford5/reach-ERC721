@@ -11,6 +11,7 @@ const Params = Object({
   minBid: UInt,
   lenInBlocks: UInt,
   owner: Address,
+  tokenId: UInt,
 })
 
 export const main = Reach.App(() => {
@@ -32,23 +33,21 @@ export const main = Reach.App(() => {
       seeOutcome: [Address, UInt],
     });
     const myERC = {
-      // The Reach contract cannot approve itself, only the token owner can do this
-      //approve: Fun([Address, UInt256], Null),
       transferFrom: Fun([Address, Address, UInt256], Null),
-      //transferFrom(address from, address to, uint256 tokenId)
     };
     init();
 
     Creator.only(() => {
-        const {nftId, minBid, lenInBlocks, owner} = declassify(interact.params);
+        const {nftId, minBid, lenInBlocks, owner, tokenId} = declassify(interact.params);
     });
-    Creator.publish(nftId, minBid, lenInBlocks, owner);
+    Creator.publish(nftId, minBid, lenInBlocks, owner, tokenId);
     commit();
     Creator.interact.callApprove(getAddress());
     Creator.publish();
     const amt = 1;
     const ctcSol = remote(nftId, myERC);
-    ctcSol.transferFrom(owner, getAddress(), UInt256(13));
+    const addr = getAddress();
+    ctcSol.transferFrom(owner, addr, UInt256(tokenId));
     //assert(balance(nftId) == amt, "balance of NFT is wrong");
     // V.min.set(minBid);
     // V.nft.set(nftId);
@@ -78,7 +77,7 @@ export const main = Reach.App(() => {
                 return [who, bid, false];
             }];
         })
-    ctcSol.transferFrom(getAddress(), highestBidder, UInt256(13));
+    ctcSol.transferFrom(addr, highestBidder, UInt256(tokenId));
     if ( ! isFirstBid ) { transfer(lastPrice).to(Creator); }
     commit();
     exit();

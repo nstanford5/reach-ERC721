@@ -14,15 +14,16 @@ import * as backend from './build/index.main.mjs';
 const stdlib = loadStdlib();
 if (stdlib.connector === 'ALGO') { process.exit(0); }
 const {ethers} = stdlib;
-console.log(`Connecting Reach Telos EVM testnet...`);
+const telos = 'https://testnet.telos.net/evm';
+console.log(`Connecting Reach to Telos EVM testnet...`);
 stdlib.setWalletFallback(stdlib.walletFallback({
   providerEnv: {
-    ETH_NODE_URI: 'https://testnet.telos.net/evm',
+    ETH_NODE_URI: telos,
   }
 }));
 console.log(`Setting constants...`);
-const nftId = '0x24D04D4eeB36d4CfD118F3929210dA885D7a2C89';
-let provider = ethers.getDefaultProvider('https://testnet.telos.net/evm');
+const nftId = '0xf72a6B8bc6348d3171D87d3814172ed4bC770747';
+let provider = ethers.getDefaultProvider(telos);
 
 const abi = [
   {
@@ -182,24 +183,25 @@ const abi = [
     "type": "function"
   }
 ];
-const minBid = stdlib.parseCurrency(0.1);
-const lenInBlocks = 100;
+const minBid = 0.1;
+const tokenId = 14;
+console.log(`Minimum bid: ${minBid}`);
+const lenInBlocks = 20;
 const owner = '0x175fCe4733A90b231954796E836C42956772d514';
 const params = {
   nftId,
-  minBid,
+  minBid: stdlib.parseCurrency(minBid),
   lenInBlocks,
   owner,
+  tokenId, 
 };
 const GAS_LIMIT = 5000000;
-const sbal = stdlib.parseCurrency(7);
-let bid = minBid;
+const sbal = stdlib.parseCurrency(5);
 console.log(`Importing creator account from MetaMask`);
 const accCreator = await stdlib.newAccountFromMnemonic('gas festival emerge olive topic blue zoo trouble chimney supply young anchor');
 console.log(`This is the creator account: ${accCreator.getAddress()}`);
 accCreator.setGasLimit(GAS_LIMIT);
 accCreator.setDebugLabel('Creator');
-
 
 const signer = new ethers.Wallet('38053b2bd389c315ed89a5fdd25eea38a0b3edca91e678a60097904df6015e6f', provider)
 console.log(`This is the signer: ${signer.address}`);
@@ -208,53 +210,62 @@ const myERC = new ethers.Contract(nftId, abi, signer);
 const myERCname = await myERC.name();
 console.log(`This is the ERC721 name: ${myERCname}`);
 
-const ownerOf = await myERC.ownerOf(9);
-console.log(`This is the ownerOf(9): ${ownerOf}`);
+const ownerOf = await myERC.ownerOf(tokenId);
+console.log(`This is the ownerOf(${tokenId}): ${ownerOf}`);
 
-const getTok = (x) => {
-  if (stdlib.connector === 'ALGO') {
-    return stdlib.bigNumberToNumber(x);
-  } else {
-    return stdlib.formatAddress(x);
-  }
-};
-
-console.log(`Deploying  Reach contract...`);
+console.log(`Deploying Reach contract...`);
 const ctcCreator = accCreator.contract(backend);
+const ctcinfo = ctcCreator.getInfo();
 
 const startAuction = async () => {
-  console.log(`Creating API caller account...`);
-  const acc1 = await stdlib.createAccount();
-  await stdlib.transfer(accCreator, acc1, sbal);
-  acc1.setGasLimit(GAS_LIMIT);
-  //await stdlib.transfer(accCreator, acc1, sbal);
-  const ctc1 = acc1.contract(backend, ctcCreator.getInfo());
-  console.log(`acc1 is ready to submit a bid`);
-  bid = stdlib.parseCurrency(1.1);
-  const [hb1, lp1] = await ctc1.apis.Bidder.bid(bid);
-  console.log(`acc1 has successfully submitted their bid`);
+  const runUser = async (who, amt) => {
+    const bid = stdlib.parseCurrency(amt);
+    console.log(`Creating API caller account`);
+    const acc = await stdlib.createAccount();
+    console.log(`${who} address: ${acc.getAddress()}`);
+    await stdlib.transfer(accCreator, acc, sbal);
+    acc.setGasLimit(GAS_LIMIT);
+    const ctc = acc.contract(backend, ctcinfo);
+    console.log(`${who} is ready to submit a bid`);
+    try{
+      const [hb, lp] = await ctc.apis.Bidder.bid(bid);
+      console.log(`${who} has submitted a bid of ${stdlib.formatCurrency(bid)}.
+      Sees highest bidder is ${stdlib.formatAddress(hb)}.
+      Sees last price: ${stdlib.formatCurrency(lp)}`);
+    } catch (e) {
+      console.log(`Reach contract errored with: ${e}`);
+    }
+    await stdlib.wait(10);
+  };
+
+  await runUser('Bob1', 0.5);
+  await runUser('Bob2', 0.6);
+  // await runUser('Bob3');
+  // await runUser('Bob4');
 };
 
-ctcCreator.e.seeBid.monitor((evt) => {
-  const {when, what: [ who_ ]} = evt;
-  const who = stdlib.formatAddress(who_);
-  console.log(`${stdlib.formatAddress(accCreator)} sees that ${who} bid`);
-});
+// ctcCreator.e.seeBid.monitor((evt) => {
+//   console.log(`seeBid monitor input triggered: ${evt}`);
+//   const {when, what: [ who_ ]} = evt;
+//   const who = stdlib.formatAddress(who_);
+//   console.log(`${stdlib.formatAddress(accCreator)} sees that ${who} bid`);
+// });
 
-ctcCreator.e.seeOutcome.monitor((evt) => {
-  const {when, what: [who_]} = evt;
-  const who = stdlib.formatAddress(who_);
-  console.log(`${stdlib.formatAddress(accCreator)} sees that ${who} won the auction`);
-})
+// ctcCreator.e.seeOutcome.monitor((evt) => {
+//   console.log(`seeOutcome monitor input triggered: ${evt}`);
+//   const {when, what: [who_]} = evt;
+//   const who = stdlib.formatAddress(who_);
+//   console.log(`${stdlib.formatAddress(accCreator)} sees that ${who} won the auction`);
+// })
 
-const ctcinfo = await stdlib.withDisconnect(() => ctcCreator.p.Creator({
+const ctcDis = await stdlib.withDisconnect(() => ctcCreator.p.Creator({
   params,
   callApprove: async (c) => {
     console.log(`Contract Address: ${c}`);
-    await myERC.approve(c, 13);
-    console.log(`Approve call complete`);
+    await myERC.approve(c, tokenId);
+    console.log(`Approve call to myERC contract complete`);
   },
-  auctionReady: stdlib.disconnect, 
+  auctionReady: stdlib.disconnect
 }));
 
 await startAuction();
