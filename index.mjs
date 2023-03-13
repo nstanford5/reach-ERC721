@@ -22,6 +22,7 @@ stdlib.setWalletFallback(stdlib.walletFallback({
   }
 }));
 console.log(`Setting constants...`);
+// ERC721 contract address
 const nftId = '0x42361Eef30149a50A6A2B27062d1E54213b47159';
 let provider = ethers.getDefaultProvider(telos);
 
@@ -184,7 +185,7 @@ const abi = [
   }
 ];
 const minBid = 0.1;
-const tokenId = 0;
+const tokenId = 0;// this comes from the ERC721 tokenId
 console.log(`Minimum bid: ${minBid}`);
 const lenInBlocks = 20;
 const owner = '0x175fCe4733A90b231954796E836C42956772d514';
@@ -196,13 +197,13 @@ const params = {
   tokenId, 
 };
 const GAS_LIMIT = 5000000;
-const sbal = stdlib.parseCurrency(5);
 console.log(`Importing creator account from MetaMask`);
 const accCreator = await stdlib.newAccountFromMnemonic('gas festival emerge olive topic blue zoo trouble chimney supply young anchor');
 console.log(`This is the creator account: ${accCreator.getAddress()}`);
 accCreator.setGasLimit(GAS_LIMIT);
 accCreator.setDebugLabel('Creator');
 
+// importing the same account through secret key
 const signer = new ethers.Wallet('38053b2bd389c315ed89a5fdd25eea38a0b3edca91e678a60097904df6015e6f', provider)
 console.log(`This is the signer: ${signer.address}`);
 
@@ -219,6 +220,7 @@ const ctcinfo = ctcCreator.getInfo();
 
 const startAuction = async () => {
   const runUser = async (who, amt) => {
+    const sbal = stdlib.parseCurrency(5);
     const bid = stdlib.parseCurrency(amt);
     console.log(`Creating API caller account`);
     const acc = await stdlib.createAccount();
@@ -261,7 +263,7 @@ ctcCreator.e.seeOutcome.monitor((evt) => {
 const ctcDis = await stdlib.withDisconnect(() => ctcCreator.p.Creator({
   params,
   callApprove: async (c) => {
-    console.log(`Contract Address: ${c}`);
+    console.log(`Reach Contract Address: ${c}`);
     await myERC.approve(c, tokenId);
     console.log(`Approve call to myERC contract complete`);
   },
