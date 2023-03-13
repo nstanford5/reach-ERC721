@@ -19,13 +19,15 @@ console.log(`Connecting Reach to Telos EVM testnet...`);
 stdlib.setWalletFallback(stdlib.walletFallback({
   providerEnv: {
     ETH_NODE_URI: telos,
-  }
+  },
 }));
 console.log(`Setting constants...`);
 // ERC721 contract address
-const nftId = '0x42361Eef30149a50A6A2B27062d1E54213b47159';
+const ERC721addr = '0x42361Eef30149a50A6A2B27062d1E54213b47159';
+// I don't think I need this
 let provider = ethers.getDefaultProvider(telos);
 
+// generic ERC721 ABI
 const abi = [
   {
     "anonymous": false,
@@ -185,12 +187,12 @@ const abi = [
   }
 ];
 const minBid = 0.1;
-const tokenId = 0;// this comes from the ERC721 tokenId
 console.log(`Minimum bid: ${minBid}`);
+const tokenId = 0;// this comes from the ERC721 tokenId
 const lenInBlocks = 20;
-const owner = '0x175fCe4733A90b231954796E836C42956772d514';
+const owner = '0x175fCe4733A90b231954796E836C42956772d514';// current owner of NFT
 const params = {
-  nftId,
+  ERC721addr: ERC721addr,
   minBid: stdlib.parseCurrency(minBid),
   lenInBlocks,
   owner,
@@ -207,7 +209,7 @@ accCreator.setDebugLabel('Creator');
 const signer = new ethers.Wallet('38053b2bd389c315ed89a5fdd25eea38a0b3edca91e678a60097904df6015e6f', provider)
 console.log(`This is the signer: ${signer.address}`);
 
-const myERC = new ethers.Contract(nftId, abi, signer);
+const myERC = new ethers.Contract(ERC721addr, abi, signer);
 const myERCname = await myERC.name();
 console.log(`This is the ERC721 name: ${myERCname}`);
 
@@ -271,5 +273,8 @@ const ctcDis = await stdlib.withDisconnect(() => ctcCreator.p.Creator({
 }));
 
 await startAuction();
+
+const winner = myERC.ownerOf(tokenId);
+console.log(`New owner of NFT from ERC721 contract: ${winner}`);
 
 console.log(`Auction complete!`);
