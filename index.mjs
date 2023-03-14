@@ -23,8 +23,7 @@ stdlib.setWalletFallback(stdlib.walletFallback({
 }));
 console.log(`Setting constants...`);
 // ERC721 contract address
-const ERC721addr = '0x42361Eef30149a50A6A2B27062d1E54213b47159';
-// I don't think I need this
+const ERC721addr = '0xB6940c995029E26428C4A553FE0FeD2546a1DED0';
 let provider = ethers.getDefaultProvider(telos);
 
 // generic ERC721 ABI
@@ -188,7 +187,7 @@ const abi = [
 ];
 const minBid = 0.1;
 console.log(`Minimum bid: ${minBid}`);
-const tokenId = 0;// this comes from the ERC721 tokenId
+const tokenId = 3;// this comes from the ERC721 tokenId
 const lenInBlocks = 20;
 const owner = '0x175fCe4733A90b231954796E836C42956772d514';// current owner of NFT
 const params = {
@@ -249,14 +248,14 @@ const startAuction = async () => {
 };
 
 ctcCreator.e.seeBid.monitor((evt) => {
-  console.log(`seeBid monitor input triggered: ${evt}`);
+  console.log(`seeBid monitor input triggered: ${JSON.stringify(evt)}`);
   const {when, what: [ who_ ]} = evt;
   const who = stdlib.formatAddress(who_);
   console.log(`${stdlib.formatAddress(accCreator)} sees that ${who} bid`);
 });
 
 ctcCreator.e.seeOutcome.monitor((evt) => {
-  console.log(`seeOutcome monitor input triggered: ${evt}`);
+  console.log(`seeOutcome monitor input triggered: ${JSON.stringify(evt)}`);
   const {when, what: [who_]} = evt;
   const who = stdlib.formatAddress(who_);
   console.log(`${stdlib.formatAddress(accCreator)} sees that ${who} won the auction`);
@@ -274,7 +273,7 @@ const ctcDis = await stdlib.withDisconnect(() => ctcCreator.p.Creator({
 
 await startAuction();
 
-const winner = myERC.ownerOf(tokenId);
+const winner = await myERC.ownerOf(tokenId);
 console.log(`New owner of NFT from ERC721 contract: ${winner}`);
 
 console.log(`Auction complete!`);

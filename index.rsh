@@ -1,7 +1,7 @@
 'reach 0.1';
 
 const Params = Object({
-  nftId: Contract,
+  ERC721addr: Contract,
   minBid: UInt,
   lenInBlocks: UInt,
   owner: Address,
@@ -33,19 +33,19 @@ export const main = Reach.App(() => {
     init();
 
     Creator.only(() => {
-        const {nftId, minBid, lenInBlocks, owner, tokenId} = declassify(interact.params);
+        const {ERC721addr, minBid, lenInBlocks, owner, tokenId} = declassify(interact.params);
     });
-    Creator.publish(nftId, minBid, lenInBlocks, owner, tokenId);
+    Creator.publish(ERC721addr, minBid, lenInBlocks, owner, tokenId);
     commit();
     Creator.interact.callApprove(getAddress());
     Creator.publish();
     const amt = 1;
-    const ctcSol = remote(nftId, myERC);
+    const ctcSol = remote(ERC721addr, myERC);
     const addr = getAddress();
     ctcSol.transferFrom(owner, addr, UInt256(tokenId));
     //assert(ctcSol.balanceOf(addr) == amt, "balance of NFT is wrong");
     V.min.set(minBid);
-    V.nft.set(nftId);
+    V.nft.set(ERC721addr);
     Creator.interact.auctionReady();
     const end = lastConsensusTime() + lenInBlocks;
     const [
